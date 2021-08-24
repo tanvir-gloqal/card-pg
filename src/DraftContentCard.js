@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import { DateTime } from "luxon";
 import {
   Card,
@@ -8,7 +8,7 @@ import {
   IconButton,
   withStyles
 } from "@material-ui/core";
-import { ExpandMore, FavoriteBorderOutlined, Image } from "@material-ui/icons";
+import { AddCircleOutline, DeleteForever, Edit, ExpandMore, FavoriteBorderOutlined, Image, RestoreFromTrash, Star, StarOutline } from "@material-ui/icons";
 import { Component } from "react";
 import ReactPlayer from "react-player";
 
@@ -16,13 +16,21 @@ const useStyles = (theme) => ({
   root: {
     border: "1px solid #C2D0D6",
     borderRadius: "12px",
-    minWidth: 264,
-    maxWidth: 264,
     margin: 16,
-    minHeight: 315
+    height: 315,
+    width: 264,
+    display: "flex",
+    flexDirection: "column"
   },
   cardAction: {
     position: "relative"
+  },
+  cardMedia: {
+    height: "115px !important",
+    width: "100% !important",
+    borderRadius: "12px !important",
+    background: "linear-gradient(0deg, rgba(0, 0, 0, 0.21), rgba(0, 0, 0, 0.21)), #85A0AD",
+    overflow: "hidden"
   },
   clickButton: {
     position: "absolute",
@@ -31,44 +39,46 @@ const useStyles = (theme) => ({
     color: "#DADADA",
     padding: 0,
     width: "48px",
+    height: "48px",
+    "&>span>svg": {
+      width: "75%",
+      height: "75%",
+    }
+  },
+  editButton: {
+    position: "absolute",
+    color: "#00AEEF",
+    top: 0,
+    right: 0,
+    padding: 0,
+    width: "48px",
     height: "48px"
   },
-  cardMedia: {
-    height: "115px !important",
-    width: "100% !important",
-    borderRadius: "12px !important",
-    background:
-      "linear-gradient(0deg, rgba(0, 0, 0, 0.21), rgba(0, 0, 0, 0.21)), #85A0AD",
-    overflow: "hidden"
+  cardContent: {
+    flex: 1,
+    position: "relative",
+    overflowY: "scroll",
+    '&::-webkit-scrollbar': {
+      width: "5px",
+    },
+    '&::-webkit-scrollbar-track': {
+      '-webkit-box-shadow': 'inset 0 0 6px rgba(0,0,0,0.00)',
+    },
+    '&::-webkit-scrollbar-thumb': {
+      borderRadius: 10,
+      '-webkit-border-radius': "10px",
+      backgroundColor: 'rgba(255,0,0,0.8)'
+    }
   },
-  imageName: {
-    paddingTop: theme.spacing(2)
-  },
-
-  cardRowStart: {
-    display: "flex",
-    marginTop: "8px"
-  },
-  cardRowBetween: {
-    display: "flex",
-    marginTop: "8px",
-    alignItems: "center",
-    justifyContent: "space-between"
-  },
-  viewsContainer: {
-    alignItems: "center",
-    display: "flex"
-  },
-  viewsNumber: {
-    marginLeft: "8px"
-  },
-  bottomCardAction: {
+  cardActions: {
     display: "flex",
     justifyContent: "space-between",
-    flex: 1,
-    marginLeft: "40%"
-  },
-  buttonIcon: { width: "100%", height: "100%" }
+    padding: 0,
+    "&>button": {
+      padding: 8
+    }
+  }
+
 });
 
 class DraftCardContent extends Component {
@@ -81,22 +91,19 @@ class DraftCardContent extends Component {
 
   renderMediaContent() {
     const {
-      post: { attachment },
+      post: { attachment, contentType }, 
       classes
     } = this.props;
     if (attachment) {
-      const {
-        url,
-        metadata: { contentType }
-      } = attachment;
+      const { url } = attachment;
       if (contentType.startsWith("image")) {
         return (
-          <div>
+          <div style={{ objectFit: "cover" }}>
             <img
               src={url}
               alt="image_pic"
               className={classes.cardMedia}
-              style={{ objectFit: "contain !important" }}
+              style={{ objectFit: "contain" }}
             />
           </div>
         );
@@ -114,12 +121,10 @@ class DraftCardContent extends Component {
       }
     }
     return (
-      <div>
-        <img
-          src={attachment.url}
-          alt="image_pic"
-          className={this.props.classes.cardMedia}
-        />
+      <div className={classes.cardMedia}>
+        <IconButton className={classes.clickButton}>
+          <AddCircleOutline />
+        </IconButton>
       </div>
     );
   }
@@ -127,7 +132,7 @@ class DraftCardContent extends Component {
   render() {
     const {
       classes,
-      creationDate,
+      post: { timeCreated, hasStarred, wasDeleted, captionHTML },
       numberOfLikes,
       imageName,
       imageDescription
@@ -136,37 +141,23 @@ class DraftCardContent extends Component {
     return (
       <Card className={classes.root}>
         <div className={classes.cardAction}>{this.renderMediaContent()}</div>
-        <CardContent className="pb-0">
-          <div className={classes.cardRowStart}>
-            <Image style={{ color: "#A9C0FF" }} />
-            <Typography style={{ marginLeft: "8px" }}>Image</Typography>
-          </div>
-          <div className={classes.cardRowBetween}>
-            <Typography>
-              {DateTime.fromISO(creationDate).toFormat("LLL dd, yyyy")}
-            </Typography>
-            <div className={classes.viewsContainer}>
-              <FavoriteBorderOutlined fontSize="small" />
-              <Typography className={classes.viewsNumber}>
-                {numberOfLikes || 0}
-              </Typography>
-            </div>
-          </div>
-          <div className={classes.imageName}>
-            <Typography style={{ fontWeight: "bold" }} noWrap>
-              {imageName}
-            </Typography>
-          </div>
-          <div className="pt-1">
-            <Typography noWrap>{imageDescription}</Typography>
-          </div>
+        <CardContent className={classes.cardContent}>
+          <IconButton className={classes.editButton} onClick={this.props.handleEditPost}>
+            <Edit />
+          </IconButton>
+          <div dangerouslySetInnerHTML={{ __html: captionHTML }} />
         </CardContent>
-        <CardActions className="pt-0">
-          <div className={classes.bottomCardAction}>
-            <IconButton size="small" color="primary">
-              <ExpandMore />
-            </IconButton>
-          </div>
+        <CardActions className={classes.cardActions}>
+          <IconButton onClick={this.props.handleDeletePost}>
+            {wasDeleted ? <RestoreFromTrash /> : <DeleteForever />}
+          </IconButton>
+          <Typography variant="body1">
+            {DateTime.fromISO(timeCreated).toFormat("LLL dd, yyyy")}
+          </Typography>
+          <IconButton onClick={this.props.handleStarPost}>
+            {hasStarred ? <Star /> : <StarOutline />}
+          </IconButton>
+
         </CardActions>
       </Card>
     );
